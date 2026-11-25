@@ -84,7 +84,7 @@ CMAKE_COMMON_ARGS=(
   -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
   -DCMAKE_C_FLAGS="-w"
   -DCMAKE_CXX_FLAGS="-w"
-  -DSTRATA_PORTABLE=ON
+  -DMAYA_PORTABLE=ON
 )
 
 CMAKE_ARGS=(
@@ -95,20 +95,20 @@ CMAKE_ARGS=(
   -DCMAKE_HIP_COMPILER_ROCM_ROOT="$ROCM_PATH"
   -DCMAKE_HIP_ARCHITECTURES="$ROCM_ARCH"
   -DCMAKE_HIP_FLAGS="$CMAKE_HIP_FLAGS -w"
-  -DSTRATA_ENABLE_HIP=ON
-  -DSTRATA_ENABLE_CUDA=OFF
-  -DSTRATA_PREFILL_MMQ=ON
-  -DSTRATA_NATIVE_EXPERTS=ON
-  -DSTRATA_BUILD_TESTS=OFF
-  -DSTRATA_GGML_DIR="$PWD/third_party/llama.cpp"
+  -DMAYA_ENABLE_HIP=ON
+  -DMAYA_ENABLE_CUDA=OFF
+  -DMAYA_PREFILL_MMQ=ON
+  -DMAYA_NATIVE_EXPERTS=ON
+  -DMAYA_BUILD_TESTS=OFF
+  -DMAYA_GGML_DIR="$PWD/third_party/llama.cpp"
 )
 cmake -S . -B build-hip -G Ninja "${CMAKE_ARGS[@]}"
-cmake --build build-hip --target maya maya-ds4 maya-mm3 --parallel "${MAYA_BUILD_JOBS:-$(nproc)}"
+cmake --build build-hip --target maya maya-ds4 maya-mm3 maya-hy4 --parallel "${MAYA_BUILD_JOBS:-$(nproc)}"
 
 CMAKE_ARGS=(
   "${CMAKE_COMMON_ARGS[@]}"
   -DLLAMA_DIR="$PWD/third_party/llama.cpp"
-  -DSTRATA_VISION_CUDA=OFF
+  -DMAYA_VISION_CUDA=OFF
 )
 cmake -S tools/vision -B build-vision-cpu -G Ninja "${CMAKE_ARGS[@]}"
 cmake --build build-vision-cpu --target maya-vision --parallel "${MAYA_BUILD_JOBS:-$(nproc)}"
@@ -129,7 +129,7 @@ meta = {
   'gpu_ids': [0],
   'llama': str(Path('third_party/llama.cpp').resolve()),
   'lib_dirs': [rocm + '/lib'],
-  'targets': ['maya', 'maya-ds4', 'maya-mm3'],
+  'targets': ['maya', 'maya-ds4', 'maya-mm3', 'maya-hy4'],
 }
 Path('build-hip/MAYA-BUILD.json').write_text(json.dumps(meta, indent=1) + '\n')
 PY
@@ -141,7 +141,7 @@ ENV CMAKE_GENERATOR=Ninja
 RUN python3 -m venv .venv
 ENV PATH="/opt/maya/.venv/bin:${PATH}"
 COPY --from=files_maya /opt/maya /opt/maya
-COPY --from=build_maya /opt/maya/build-hip/maya /opt/maya/build-hip/maya-ds4 /opt/maya/build-hip/maya-mm3 /opt/maya/build-hip/MAYA-BUILD.json ./build-hip/
+COPY --from=build_maya /opt/maya/build-hip/maya /opt/maya/build-hip/maya-ds4 /opt/maya/build-hip/maya-mm3 /opt/maya/build-hip/maya-hy4 /opt/maya/build-hip/MAYA-BUILD.json ./build-hip/
 COPY --from=build_maya /opt/maya/build-vision-cpu/bin/maya-vision ./build-vision-cpu/bin/
 COPY extra/ /opt/maya/
 RUN /opt/maya/install-python-deps.sh && /opt/maya/validate-build.sh
